@@ -35,7 +35,13 @@
     </div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", muatJadwal);
+        document.addEventListener("DOMContentLoaded", () => {
+            muatJadwal();
+            // Minta izin notifikasi browser saat halaman dibuka
+            if (window.Notification && Notification.permission !== "granted") {
+                Notification.requestPermission();
+            }
+        });
 
         function tambahJadwal() {
             const taskInput = document.getElementById('taskInput');
@@ -108,7 +114,7 @@
             tampilkanJadwal();
         }
 
-        // --- SISTEM ALARM DENGAN SUARA BRAWAI / BEEP (WEB AUDIO API) ---
+        // --- SISTEM ALARM DENGAN AUDIO BEEP & NOTIFIKASI ---
         function bunyiBeep() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -116,12 +122,12 @@
                 const gainNode = audioCtx.createGain();
 
                 oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // Nada dering
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
                 oscillator.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
 
                 oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.8); // Bunyi selama 0.8 detik
+                oscillator.stop(audioCtx.currentTime + 0.8);
             } catch (e) {
                 console.log("Audio didukung");
             }
@@ -136,8 +142,18 @@
 
             tasks.forEach(task => {
                 if (task.waktu === jamSekarang && !task.sudahBunyi) {
-                    bunyiBeep(); // Memanggil suara alarm otomatis
-                    alert(`⏰ WAKTUNYA KEGIATAN!\n\nKegiatan: "${task.nama}" (${task.kategori}) sudah dimulai!`);
+                    bunyiBeep();
+                    
+                    // Memunculkan Notifikasi Resmi Browser (Walau tab di background)
+                    if (window.Notification && Notification.permission === "granted") {
+                        new Notification("⏰ WAKTUNYA KEGIATAN!", {
+                            body: `Kegiatan: "${task.nama}" (${task.kategori}) sudah dimulai!`,
+                            icon: ""
+                        });
+                    } else {
+                        alert(`⏰ WAKTUNYA KEGIATAN!\n\nKegiatan: "${task.nama}" (${task.kategori}) sudah dimulai!`);
+                    }
+
                     task.sudahBunyi = true;
                     adaPerubahan = true;
                 }
